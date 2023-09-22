@@ -19,12 +19,12 @@ class Program
             {
                 if (user_number < magic_number)
                 {
-                    Console.WriteLine("Lower");
+                    Console.WriteLine("Higher");
                     guess++;
                 }
                 else if (user_number > magic_number)
                 {
-                    Console.WriteLine("Higher");
+                    Console.WriteLine("Lower");
                     guess++;
                 }
                 Console.WriteLine("What is your guess?");
