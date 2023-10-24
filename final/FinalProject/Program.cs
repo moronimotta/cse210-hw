@@ -5,8 +5,6 @@ class Program
 {
     static void Main(string[] args)
     {
-        Console.WriteLine("Welcome to BYUI Macro Tracker!");
-
         Console.Write("Please enter your name: ");
         string name = Console.ReadLine();
         Console.Write("Please enter your age: ");
@@ -27,17 +25,17 @@ class Program
         switch (goalChoice)
         {
             case 1:
-                goals = new MacroGoals(0.8, 0.2, 0.2);
+                goals = new MacroGoals(0.8f, 0.2f, 0.2f);
                 break;
             case 2:
-                goals = new MacroGoals(0.4, 0.3, 0.3);
+                goals = new MacroGoals(0.4f, 0.3f, 0.3f);
                 break;
             case 3:
-                goals = new MacroGoals(0.3, 0.4, 0.3);
+                goals = new MacroGoals(0.3f, 0.4f, 0.3f);
                 break;
             default:
                 Console.WriteLine("Invalid choice. Using default goals.");
-                goals = new MacroGoals(0.4, 0.3, 0.3);
+                goals = new MacroGoals(0.4f, 0.3f, 0.3f);
                 break;
         }
         user.SetMacroGoals(goals);
@@ -48,10 +46,12 @@ class Program
             Console.WriteLine();
             Console.WriteLine($"Welcome, {user.Name}!");
             Console.WriteLine("Main Menu");
-            Console.WriteLine("1. Add meal");
-            Console.WriteLine("2. View plan");
-            Console.WriteLine("3. Save plan");
-            Console.WriteLine("4. Exit");
+            Console.WriteLine("1. Add a meal");
+            Console.WriteLine("2. View meal plan");
+            Console.WriteLine("3. Save plan to file");
+            Console.WriteLine("4. Edit a specific food for the meal");
+            Console.WriteLine("5. Delete a specific meal");
+            Console.WriteLine("6. Exit");
             Console.Write("Please enter your choice: ");
             string choice = Console.ReadLine();
             Console.WriteLine();
@@ -149,6 +149,44 @@ class Program
                     Console.WriteLine($"Plan saved to {filename}.");
                     break;
                 case "4":
+                    Console.Write("Please enter the name of the meal to edit: ");
+                    string mealToEdit = Console.ReadLine();
+                    Meal mealToEditObj = user.Meals.Find(m => m.Name == mealToEdit);
+                    if (mealToEditObj == null)
+                    {
+                        Console.WriteLine($"Meal {mealToEdit} not found.");
+                        break;
+                    }
+                    Console.Write("Please enter the name of the food to edit: ");
+                    string foodToEdit = Console.ReadLine();
+                    Food foodToEditObj = mealToEditObj.Foods.Find(f => f.Name == foodToEdit);
+                    if (foodToEditObj == null)
+                    {
+                        Console.WriteLine($"Food {foodToEdit} not found in meal {mealToEdit}.");
+                        break;
+                    }
+                    Console.Write("Please enter the new quantity of the food: ");
+                    int newQuantity = int.Parse(Console.ReadLine());
+                    foodToEditObj.Quantity = newQuantity;
+                    Console.WriteLine($"Food {foodToEdit} in meal {mealToEdit} updated.");
+                    Console.WriteLine($"Current macros: {user.GetCurrentMacros()}");
+                    Console.WriteLine($"Goal macros: {user.GetGoalMacros()}");
+                    break;
+                case "5":
+                    Console.Write("Please enter the name of the meal to delete: ");
+                    string mealToDelete = Console.ReadLine();
+                    Meal mealToDeleteObj = user.Meals.Find(m => m.Name == mealToDelete);
+                    if (mealToDeleteObj == null)
+                    {
+                        Console.WriteLine($"Meal {mealToDelete} not found.");
+                        break;
+                    }
+                    user.Meals.Remove(mealToDeleteObj);
+                    Console.WriteLine($"Meal {mealToDelete} deleted.");
+                    Console.WriteLine($"Current macros: {user.GetCurrentMacros()}");
+                    Console.WriteLine($"Goal macros: {user.GetGoalMacros()}");
+                    break;
+                case "6":
                     exit = true;
                     break;
                 default:
@@ -159,7 +197,7 @@ class Program
     }
 }
 
-class UserProfile
+abstract class MacroTracker
 {
     public string Name { get; set; }
     public int Age { get; set; }
@@ -168,7 +206,7 @@ class UserProfile
     public List<Meal> Meals { get; set; }
     public MacroGoals Goals { get; set; }
 
-    public UserProfile(string name, int age, int heightInches, int weightPounds)
+    public MacroTracker(string name, int age, int heightInches, int weightPounds)
     {
         Name = name;
         Age = age;
@@ -187,25 +225,38 @@ class UserProfile
         Meals.Add(meal);
     }
 
-    public string GetCurrentMacros()
+    public abstract string GetCurrentMacros();
+
+    public abstract string GetGoalMacros();
+
+    public abstract string GetTotalMacros();
+}
+
+class UserProfile : MacroTracker
+{
+    public UserProfile(string name, int age, int heightInches, int weightPounds) : base(name, age, heightInches, weightPounds)
     {
-        float proteinGrams = 0;
-        float carbsGrams = 0;
-        float fatGrams = 0;
-        foreach (Meal m in Meals)
-        {
-            foreach (Food f in m.Foods)
-            {
-                string[] macros = f.Macros.Split('/');
-                proteinGrams += float.Parse(macros[0]) * f.Quantity;
-                carbsGrams += float.Parse(macros[1]) * f.Quantity;
-                fatGrams += float.Parse(macros[2]) * f.Quantity;
-            }
-        }
-        return $"Protein: {proteinGrams}g, Carbs: {carbsGrams}g, Fat: {fatGrams}g";
     }
 
-    public string GetGoalMacros()
+    public override string GetCurrentMacros()
+{
+    float proteinGrams = 0f;
+    float carbsGrams = 0f;
+    float fatGrams = 0f;
+    foreach (Meal m in Meals)
+    {
+        foreach (Food f in m.Foods)
+        {
+            string[] macros = f.Macros.Split('/');
+            proteinGrams += float.Parse(macros[0]) * f.Quantity;
+            carbsGrams += float.Parse(macros[1]) * f.Quantity;
+            fatGrams += float.Parse(macros[2]) * f.Quantity;
+        }
+    }
+    return $"Protein: {proteinGrams}g, Carbs: {carbsGrams}g, Fat: {fatGrams}g";
+}
+
+    public override string GetGoalMacros()
     {
         int totalCalories = Goals.TotalCalories;
         int proteinCalories = (int)(totalCalories * Goals.ProteinRatio);
@@ -217,7 +268,7 @@ class UserProfile
         return $"Protein: {proteinGrams}g, Carbs: {carbsGrams}g, Fat: {fatGrams}g";
     }
 
-    public string GetTotalMacros()
+    public override string GetTotalMacros()
     {
         float proteinGrams = 0;
         float carbsGrams = 0;
@@ -269,12 +320,12 @@ class Food
 
 class MacroGoals
 {
-    public double ProteinRatio { get; set; }
-    public double CarbRatio { get; set; }
-    public double FatRatio { get; set; }
+    public float ProteinRatio { get; set; }
+    public float CarbRatio { get; set; }
+    public float FatRatio { get; set; }
     public int TotalCalories { get; set; }
 
-    public MacroGoals(double proteinRatio, double carbRatio, double fatRatio)
+    public MacroGoals(float proteinRatio, float carbRatio, float fatRatio)
     {
         ProteinRatio = proteinRatio;
         CarbRatio = carbRatio;
