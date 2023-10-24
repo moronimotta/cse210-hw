@@ -59,7 +59,6 @@ class Program
             switch (choice)
             {
                 case "1":
-                    // Add a meal
                     Console.Write("Please enter the name of the meal: ");
                     string mealName = Console.ReadLine();
                     Meal meal = new Meal(mealName);
